@@ -15,6 +15,28 @@ const queryOptions = {
   limit: '1000',
   page: "0",
 };
+const express = require('express');
+const linkedIn = require('linkedin-jobs-api');
+const app = express();
+
+const port = process.env.PORT || 3000;
+
+app.get('/jobs', async (req, res) => {
+  try {
+    const jobs = await linkedIn.query(queryOptions);
+    res.json(jobs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/', (req, res) => {
+  res.send('LinkedIn Jobs API is running!');
+});
+
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on port ${port}`);
+});
 
 linkedIn.query(queryOptions).then(response => {
 	console.log(response); // An array of Job objects
