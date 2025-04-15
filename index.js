@@ -323,7 +323,7 @@ function parseJobList(jobData) {
             jobUrl: jobUrl || "",
             companyLogo: companyLogo || "",
             agoTime: agoTime || "",
-	    description: description || "", // <-- Add this line
+	    description: description || "" // <-- Add this line
           };
         } catch (err) {
           console.warn(`Error parsing job at index ${index}:`, err.message);
