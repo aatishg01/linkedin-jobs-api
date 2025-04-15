@@ -16,7 +16,6 @@ const queryOptions = {
   page: "0",
 };
 const express = require('express');
-const linkedIn = require('linkedin-jobs-api');
 const app = express();
 
 const port = process.env.PORT || 3000;
