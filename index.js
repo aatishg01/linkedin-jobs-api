@@ -7,14 +7,14 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const linkedIn = require('linkedin-jobs-api');
 
 const queryOptions = {
-  keyword: 'software engineer',
-  location: 'India',
+  keyword: 'mechanical engineer',
+  location: 'Philadelphia',
   dateSincePosted: 'past Week',
   jobType: 'full time',
-  remoteFilter: 'remote',
+  remoteFilter: 'on-site',
   salary: '100000',
   experienceLevel: 'entry level',
-  limit: '10',
+  limit: '1000',
   page: "0",
 };
 
