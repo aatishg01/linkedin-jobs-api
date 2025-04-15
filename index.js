@@ -5,7 +5,7 @@ const randomUseragent = require("random-useragent");
 // Utility functions
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const port = 1000; // or any hardcoded value
-app.listen(port, '0.0.0.0;, () => {
+app.listen(port, '0.0.0.0';, () => {
   console.log(`Server running on port ${port}`);
 });
 // Cache implementation
