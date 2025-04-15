@@ -308,7 +308,7 @@ function parseJobList(jobData) {
             .find(".artdeco-entity-image")
             .attr("data-delayed-url");
           const agoTime = job.find(".job-search-card__listdate").text().trim();
-
+	  const description = job.find(".job-search-card__snippet").text().trim();
           // Only return job if we have at least position and company
           if (!position || !company) {
             return null;
@@ -323,6 +323,7 @@ function parseJobList(jobData) {
             jobUrl: jobUrl || "",
             companyLogo: companyLogo || "",
             agoTime: agoTime || "",
+	    description: description || "", // <-- Add this line
           };
         } catch (err) {
           console.warn(`Error parsing job at index ${index}:`, err.message);
