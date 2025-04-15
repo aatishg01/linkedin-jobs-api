@@ -304,7 +304,7 @@ app.get('/jobs', async (req, res) => {
       dateSincePosted: req.query.dateSincePosted || 'past Week',
       jobType: req.query.jobType || 'full time',
       experienceLevel: req.query.experienceLevel || 'entry level',
-      limit: req.query.limit || '10',
+      limit: req.query.limit || '100',
       page: req.query.page || "0",
     };
     const jobs = await module.exports.query(queryOptions);
