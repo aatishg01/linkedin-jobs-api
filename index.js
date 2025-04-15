@@ -1,10 +1,40 @@
 const cheerio = require("cheerio");
 const axios = require("axios");
 const randomUseragent = require("random-useragent");
+const express = require('express');
+const app = express();
 
-// Utility functions
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const linkedIn = require('linkedin-jobs-api');
+
+// Utility: Fetch full job description from job detail page
+async function fetchJobDescription(jobUrl) {
+  try {
+    const headers = {
+      "User-Agent": randomUseragent.getRandom(),
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      Connection: "keep-alive",
+    };
+    // Add delay to avoid rate limiting (2-5 seconds between requests)
+    await delay(2000 + Math.random() * 2000);
+
+    const response = await axios.get(jobUrl, {
+      headers,
+      timeout: 10000,
+    });
+
+    const $ = cheerio.load(response.data);
+    // Try both possible selectors for robustness
+    let description = $('.description__text .show-more-less-html').text().trim();
+    if (!description) {
+      description = $('.show-more-less-html__markup').text().trim();
+    }
+    return description || "Description not available";
+  } catch (error) {
+    console.error(`Error fetching description for ${jobUrl}:`, error.message);
+    return "Description not available";
+  }
+}
 
 const queryOptions = {
   keyword: 'mechanical engineer',
@@ -12,18 +42,25 @@ const queryOptions = {
   dateSincePosted: 'past Week',
   jobType: 'full time',
   experienceLevel: 'entry level',
-  limit: '1000',
+  limit: '10',
   page: "0",
 };
-const express = require('express');
-const app = express();
 
 const port = process.env.PORT || 3000;
 
 app.get('/jobs', async (req, res) => {
   try {
     const jobs = await linkedIn.query(queryOptions);
-    res.json(jobs);
+    // Fetch full descriptions for each job
+    const jobsWithDescriptions = await Promise.all(jobs.map(async (job) => {
+      if (job.jobUrl) {
+        job.description = await fetchJobDescription(job.jobUrl);
+      } else {
+        job.description = "Description not available";
+      }
+      return job;
+    }));
+    res.json(jobsWithDescriptions);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -37,9 +74,8 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
 
-linkedIn.query(queryOptions).then(response => {
-	console.log(response); // An array of Job objects
-});
+const linkedIn = require('linkedin-jobs-api');
+
 // Cache implementation
 class JobCache {
   constructor() {
@@ -283,65 +319,50 @@ Query.prototype.fetchJobBatch = async function (start) {
     throw error;
   }
 };
-// Add this function to your code
-async function fetchJobDescription(jobUrl) {
-  try {
-    const headers = {
-      "User-Agent": randomUseragent.getRandom(),
-      "Accept-Language": "en-US,en;q=0.9",
-      "Accept-Encoding": "gzip, deflate, br",
-      Connection: "keep-alive",
-    };
 
-    // Add delay to avoid rate limiting (2-5 seconds between requests)
-    await delay(3000 + Math.random() * 2000);
-
-    const response = await axios.get(jobUrl, {
-      headers,
-      timeout: 10000,
-    });
-
-    const $ = cheerio.load(response.data);
-    return $('.description__text .show-more-less-html').text().trim();
-  } catch (error) {
-    console.error(`Error fetching description for ${jobUrl}:`, error.message);
-    return "Description not available";
-  }
-}
-
+// Make parseJobList async to allow for future enhancements (if you want to fetch snippets here)
 function parseJobList(jobData) {
   try {
     const $ = cheerio.load(jobData);
     const jobs = $("li");
-    
-    // Process jobs asynchronously
-    const jobPromises = jobs.map(async (index, element) => { // <-- Add async
-      try {
-        const job = $(element);
-        // ... existing field extraction ...
-        const jobUrl = job.find(".base-card__full-link").attr("href");
-        
-        // Fetch full description
-        const description = await fetchJobDescription(jobUrl); // Now valid
-        
-        return {
-          position,
-          company,
-          location,
-          date,
-          salary: salary || "Not specified",
-          jobUrl: jobUrl || "",
-          companyLogo: companyLogo || "",
-          agoTime: agoTime || "",
-          description: description || ""
-        };
-      } catch (err) {
-        console.warn(`Error parsing job at index ${index}:`, err.message);
-        return null;
-      }
-    }).get();
-
-    return (await Promise.all(jobPromises)).filter(Boolean); // <-- Add this
+    return jobs
+      .map((index, element) => {
+        try {
+          const job = $(element);
+          const position = job.find(".base-search-card__title").text().trim();
+          const company = job.find(".base-search-card__subtitle").text().trim();
+          const location = job.find(".job-search-card__location").text().trim();
+          const dateElement = job.find("time");
+          const date = dateElement.attr("datetime");
+          const salary = job
+            .find(".job-search-card__salary-info")
+            .text()
+            .trim()
+            .replace(/\s+/g, " ");
+          const jobUrl = job.find(".base-card__full-link").attr("href");
+          const companyLogo = job
+            .find(".artdeco-entity-image")
+            .attr("data-delayed-url");
+          const agoTime = job.find(".job-search-card__listdate").text().trim();
+          // We'll fetch the full description later in /jobs route
+          return {
+            position,
+            company,
+            location,
+            date,
+            salary: salary || "Not specified",
+            jobUrl: jobUrl || "",
+            companyLogo: companyLogo || "",
+            agoTime: agoTime || "",
+            description: "" // Placeholder, will be filled in /jobs route
+          };
+        } catch (err) {
+          console.warn(`Error parsing job at index ${index}:`, err.message);
+          return null;
+        }
+      })
+      .get()
+      .filter(Boolean);
   } catch (error) {
     console.error("Error parsing job list:", error);
     return [];
