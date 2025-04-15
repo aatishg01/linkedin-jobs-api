@@ -283,6 +283,31 @@ Query.prototype.fetchJobBatch = async function (start) {
     throw error;
   }
 };
+// Add this function to your code
+function fetchJobDescription(jobUrl) {
+  try {
+    const headers = {
+      "User-Agent": randomUseragent.getRandom(),
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      Connection: "keep-alive",
+    };
+
+    // Add delay to avoid rate limiting (2-5 seconds between requests)
+    await delay(3000 + Math.random() * 2000);
+
+    const response = await axios.get(jobUrl, {
+      headers,
+      timeout: 10000,
+    });
+
+    const $ = cheerio.load(response.data);
+    return $('.description__text .show-more-less-html').text().trim();
+  } catch (error) {
+    console.error(`Error fetching description for ${jobUrl}:`, error.message);
+    return "Description not available";
+  }
+}
 
 function parseJobList(jobData) {
   try {
@@ -308,7 +333,7 @@ function parseJobList(jobData) {
             .find(".artdeco-entity-image")
             .attr("data-delayed-url");
           const agoTime = job.find(".job-search-card__listdate").text().trim();
-	  const description = job.find(".job-search-card__snippet").text().trim();
+	  const description =  await fetchJobDescription(jobUrl);
           // Only return job if we have at least position and company
           if (!position || !company) {
             return null;
