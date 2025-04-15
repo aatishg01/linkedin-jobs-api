@@ -309,54 +309,39 @@ async function fetchJobDescription(jobUrl) {
   }
 }
 
-async function parseJobList(jobData) {
+function parseJobList(jobData) {
   try {
     const $ = cheerio.load(jobData);
     const jobs = $("li");
+    
+    // Process jobs asynchronously
+    const jobPromises = jobs.map(async (index, element) => { // <-- Add async
+      try {
+        const job = $(element);
+        // ... existing field extraction ...
+        const jobUrl = job.find(".base-card__full-link").attr("href");
+        
+        // Fetch full description
+        const description = await fetchJobDescription(jobUrl); // Now valid
+        
+        return {
+          position,
+          company,
+          location,
+          date,
+          salary: salary || "Not specified",
+          jobUrl: jobUrl || "",
+          companyLogo: companyLogo || "",
+          agoTime: agoTime || "",
+          description: description || ""
+        };
+      } catch (err) {
+        console.warn(`Error parsing job at index ${index}:`, err.message);
+        return null;
+      }
+    }).get();
 
-    return jobs
-      .map((index, element) => {
-        try {
-          const job = $(element);
-          const position = job.find(".base-search-card__title").text().trim();
-          const company = job.find(".base-search-card__subtitle").text().trim();
-          const location = job.find(".job-search-card__location").text().trim();
-          const dateElement = job.find("time");
-          const date = dateElement.attr("datetime");
-          const salary = job
-            .find(".job-search-card__salary-info")
-            .text()
-            .trim()
-            .replace(/\s+/g, " ");
-          const jobUrl = job.find(".base-card__full-link").attr("href");
-          const companyLogo = job
-            .find(".artdeco-entity-image")
-            .attr("data-delayed-url");
-          const agoTime = job.find(".job-search-card__listdate").text().trim();
-	  const description =  await fetchJobDescription(jobUrl);
-          // Only return job if we have at least position and company
-          if (!position || !company) {
-            return null;
-          }
-
-          return {
-            position,
-            company,
-            location,
-            date,
-            salary: salary || "Not specified",
-            jobUrl: jobUrl || "",
-            companyLogo: companyLogo || "",
-            agoTime: agoTime || "",
-	    description: description || "" // <-- Add this line
-          };
-        } catch (err) {
-          console.warn(`Error parsing job at index ${index}:`, err.message);
-          return null;
-        }
-      })
-      .get()
-      .filter(Boolean);
+    return (await Promise.all(jobPromises)).filter(Boolean); // <-- Add this
   } catch (error) {
     console.error("Error parsing job list:", error);
     return [];
