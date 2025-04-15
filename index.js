@@ -284,7 +284,7 @@ Query.prototype.fetchJobBatch = async function (start) {
   }
 };
 // Add this function to your code
-function fetchJobDescription(jobUrl) {
+async function fetchJobDescription(jobUrl) {
   try {
     const headers = {
       "User-Agent": randomUseragent.getRandom(),
@@ -309,7 +309,7 @@ function fetchJobDescription(jobUrl) {
   }
 }
 
-function parseJobList(jobData) {
+async function parseJobList(jobData) {
   try {
     const $ = cheerio.load(jobData);
     const jobs = $("li");
