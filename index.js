@@ -11,7 +11,6 @@ const queryOptions = {
   location: 'Philadelphia',
   dateSincePosted: 'past Week',
   jobType: 'full time',
-  remoteFilter: 'on-site',
   salary: '100000',
   experienceLevel: 'entry level',
   limit: '1000',
