@@ -4,14 +4,22 @@ const randomUseragent = require("random-useragent");
 
 // Utility functions
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const express = require('express');
-const app = express(); // <-- Initialize the app here
-const port = process.env.PORT || 1000;
+const linkedIn = require('linkedin-jobs-api');
 
-// Add routes or middleware here
+const queryOptions = {
+  keyword: 'software engineer',
+  location: 'India',
+  dateSincePosted: 'past Week',
+  jobType: 'full time',
+  remoteFilter: 'remote',
+  salary: '100000',
+  experienceLevel: 'entry level',
+  limit: '10',
+  page: "0",
+};
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
+linkedIn.query(queryOptions).then(response => {
+	console.log(response); // An array of Job objects
 });
 // Cache implementation
 class JobCache {
